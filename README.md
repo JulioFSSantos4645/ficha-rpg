@@ -1,3 +1,9 @@
+# Mesa de Call of Cthulhu (7ª Edição)
+
+Uma ficha digital e interativa de investigador para **Call of Cthulhu (7ª Edição)**, desenvolvida para rodar localmente em Node.js e facilitar partidas presenciais ou online. O sistema permite gerenciar atributos, marcadores de vida, magia, sorte e sanidade, controlar perícias, armas e inventário, além de contar com um rolador de dados integrado e layout responsivo para acesso pelo celular na mesma rede Wi-Fi (LAN), ou por VPN.
+
+> **Aviso:** Este é um projeto não oficial feito por fã, sem fins comerciais e sem qualquer vínculo, endosso ou afiliação com a Chaosium Inc. ou os detentores dos direitos de *Call of Cthulhu*. Nenhuma arte, texto ou material protegido dos livros oficiais está incluído neste repositório.
+
 # Como executar o projeto
 
 ## Pré-requisitos
@@ -48,9 +54,25 @@ Depois de iniciar o servidor, o terminal exibirá o endereço e a porta em que e
   ```text
   http://localhost:PORTA
   ```
-- **Em outros dispositivos na mesma rede Wi-Fi / LAN** (celular, tablet ou outro PC):
+- **Em outros dispositivos na mesma rede Wi-Fi / LAN ou VPN** (celular, tablet ou outro PC):
   ```text
   http://SEU-IP-LOCAL:PORTA
   ```
 
 > **Dica:** Substitua `PORTA` pelo número exibido no terminal e `SEU-IP-LOCAL` pelo endereço IP do computador que está rodando o servidor (ex.: `http://192.168.1.10:3000`).
+
+---
+
+# Imagens da Ficha
+
+## Aba do Investigador
+  <img width="1919" height="1079" alt="Captura de tela 2026-11-19 170703" src="https://github.com/user-attachments/assets/2f96da51-1c5c-4052-a62b-17bffdef676b" />
+
+## Aba de Perícias com Histórico de Rolagens
+  <img width="1919" height="1079" alt="Captura de tela 2026-11-19 170801" src="https://github.com/user-attachments/assets/63bdbe17-579d-4e67-920e-ff94069114f4" />
+
+## Aba de Combate/Inventário
+  <img width="1919" height="1079" alt="Captura de tela 2026-11-19 170808" src="https://github.com/user-attachments/assets/62622213-ac4a-42eb-9558-348fc20c39b4" />
+
+## No Celular
+  <img width="360" height="800" alt="Captura de tela 2026-11-19 170936" src="https://github.com/user-attachments/assets/e588ddf1-7a08-4a80-b179-a2fa2ff66dc7" />

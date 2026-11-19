@@ -1,4 +1,4 @@
-# Mesa de Call of Cthulhu (7ª Edição)
+# VTT de Call of Cthulhu (7ª Edição)
 
 Uma ficha digital e interativa de investigador para **Call of Cthulhu (7ª Edição)**, desenvolvida para rodar localmente em Node.js e facilitar partidas presenciais ou online. O sistema permite gerenciar atributos, marcadores de vida, magia, sorte e sanidade, controlar perícias, armas e inventário, além de contar com um rolador de dados integrado e layout responsivo para acesso pelo celular na mesma rede Wi-Fi (LAN), ou por VPN.
 
@@ -68,11 +68,11 @@ Depois de iniciar o servidor, o terminal exibirá o endereço e a porta em que e
 ## Aba do Investigador
   <img width="1919" height="1079" alt="Captura de tela 2026-11-19 170703" src="https://github.com/user-attachments/assets/2f96da51-1c5c-4052-a62b-17bffdef676b" />
 
-## Aba de Perícias com Histórico de Rolagens
+## Aba de Perícias e com Histórico de Rolagens
   <img width="1919" height="1079" alt="Captura de tela 2026-11-19 170801" src="https://github.com/user-attachments/assets/63bdbe17-579d-4e67-920e-ff94069114f4" />
 
-## Aba de Combate/Inventário
-  <img width="1919" height="1079" alt="Captura de tela 2026-11-19 170808" src="https://github.com/user-attachments/assets/62622213-ac4a-42eb-9558-348fc20c39b4" />
+## Aba de Combate e Inventário
+  <img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/0a37e129-e71c-4cd1-bb02-5f8771063081" />
 
 ## No Celular
   <img width="360" height="800" alt="Captura de tela 2026-11-19 170936" src="https://github.com/user-attachments/assets/e588ddf1-7a08-4a80-b179-a2fa2ff66dc7" />

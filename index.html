@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Call of Cthulhu – Mesa</title>
+  <style>
+    :root {
+      --bg: #14110f; --paper: #211c17; --paper-2: #2b241d; --ink: #e8dfd0; --muted: #9a8f7d;
+      --accent: #6fa38a; --accent-2: #c9a24b; --danger: #c65b4f; --line: #4a3f33;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0; color: var(--ink); font-family: Georgia, "Times New Roman", serif; line-height: 1.4;
+      background: var(--bg) radial-gradient(circle at top, #1f2a26 0%, var(--bg) 55%) fixed; min-height: 100vh;
+    }
+    .top {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+      padding: 14px 22px; border-bottom: 2px solid var(--accent); background: rgba(20, 17, 15, .95);
+    }
+    .top h1 { margin: 0; font-size: 1.5rem; letter-spacing: .05em; color: var(--accent-2); }
+    .top h1 small { display: block; font-size: .7rem; color: var(--muted); letter-spacing: .15em; text-transform: uppercase; }
+    .status { display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; color: var(--muted); }
+    .status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; }
+    .status.ok { color: #9fe0b8; } .status.ok .dot { background: #6fe3a3; }
+    .status.warn { color: #ffcf8a; } .status.warn .dot { background: #ffcf8a; }
+
+    main { max-width: 1000px; margin: 0 auto; padding: 26px 14px 60px; display: grid; gap: 30px; }
+    h2 {
+      margin: 0 0 12px; font-size: 1.05rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--accent-2); border-bottom: 1px solid var(--line); padding-bottom: 6px;
+    }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    a.card {
+      display: flex; gap: 14px; align-items: center; padding: 16px; min-width: 0;
+      background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+      color: inherit; text-decoration: none; box-shadow: 0 4px 18px rgba(0, 0, 0, .35);
+      transition: border-color .15s, transform .15s;
+    }
+    a.card:hover, a.card:focus-visible { border-color: var(--accent-2); transform: translateY(-2px); outline: none; }
+    .avatar {
+      flex: none; width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
+      font-size: 1.5rem; background: rgba(201, 162, 75, .16); border: 1px solid var(--accent-2); color: var(--accent-2);
+    }
+    .card.master .avatar { background: rgba(111, 163, 138, .16); border-color: var(--accent); color: var(--accent); }
+    .ct { min-width: 0; }
+    .ct b { display: block; font-size: 1.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ct small { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empty { margin: 0; color: var(--muted); font-style: italic; font-size: .92rem; }
+    .empty code { color: var(--accent-2); font-style: normal; }
+    @media (max-width: 600px) {
+      .top { padding: 12px; } .top h1 { font-size: 1.25rem; }
+      main { padding: 18px 10px 50px; gap: 24px; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1>Call of Cthulhu <small>Mesa de jogo</small></h1>
+    <span id="status" class="status"><i class="dot"></i><span class="txt">procurando fichas…</span></span>
+  </header>
+
+  <main>
+    <section>
+      <h2>Jogadores</h2>
+      <div id="players" class="cards"></div>
+      <p id="players-empty" class="empty" hidden>Nenhuma ficha encontrada. Cada jogador precisa de uma pasta dentro de <code>players/</code>, com o <code>player.html</code> da ficha.</p>
+    </section>
+
+    <section>
+      <h2>Mestre</h2>
+      <div id="master" class="cards"></div>
+      <p id="master-empty" class="empty" hidden>Arquivo <code>mestre.html</code> não encontrado. Coloque-o dentro de uma pasta (por exemplo <code>mestre/mestre.html</code>).</p>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+      const $ = s => document.querySelector(s);
+      const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+      // "player1.html", "player1.index" ou "player1.index.html" → "player1"
+      const baseName = f => String(f).replace(/(\.index)?\.html?$/i, '').replace(/\.index$/i, '');
+
+      function card(href, title, sub, letter, cls) {
+        const a = document.createElement('a');
+        a.className = 'card' + (cls ? ' ' + cls : '');
+        a.href = href;
+        const av = document.createElement('span');
+        av.className = 'avatar';
+        av.textContent = letter;
+        const ct = document.createElement('span');
+        ct.className = 'ct';
+        const b = document.createElement('b');
+        b.textContent = title;
+        const s = document.createElement('small');
+        s.textContent = sub;
+        ct.append(b, s);
+        a.append(av, ct);
+        return a;
+      }
+
+      const statusEl = $('#status');
+      function setStatus(text, cls) {
+        statusEl.className = 'status ' + (cls || '');
+        $('.txt', statusEl).textContent = text;
+      }
+
+      function render(j) {
+        const players = $('#players');
+        players.replaceChildren();
+        j.jogadores.forEach(p => {
+          const bn = baseName(p.arquivo);
+          const nome = p.nome || (bn.toLowerCase() === 'player' ? p.pasta : bn);
+          const sub = p.ocupacao || (p.pasta + '/' + p.arquivo);
+          players.append(card(p.url || encPath('players/' + p.pasta + '/' + p.arquivo), (p.protegida ? '🔒 ' : '') + nome, sub, (nome[0] || '?').toUpperCase()));
+        });
+        $('#players-empty').hidden = j.jogadores.length > 0;
+
+        const master = $('#master');
+        master.replaceChildren();
+        if (j.mestre) {
+          master.append(card(j.mestre.url || encPath(j.mestre.pasta + '/' + j.mestre.arquivo), 'Mesa do Mestre', 'Acompanhar os marcadores dos jogadores', '♛', 'master'));
+        }
+        $('#master-empty').hidden = !!j.mestre;
+      }
+
+      let last = '';
+      async function load() {
+        try {
+          const r = await fetch('/api/fichas', { cache: 'no-store' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const j = await r.json();
+          const n = j.jogadores.length;
+          setStatus(n + (n === 1 ? ' ficha encontrada' : ' fichas encontradas'), 'ok');
+          const sig = JSON.stringify(j);
+          if (sig === last) return;
+          last = sig;
+          render(j);
+        } catch (_) {
+          setStatus(location.protocol === 'file:'
+            ? 'Abra pelo servidor: rode "node server.js" e acesse http://localhost:3000'
+            : 'Servidor fora do ar', 'warn');
+        }
+      }
+
+      load();
+      setInterval(load, 5000);
+    })();
+  </script>
+</body>
+</html>

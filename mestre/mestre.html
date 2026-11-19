@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mesa do Mestre – Call of Cthulhu</title>
+  <style>
+    :root {
+      --bg: #14110f; --paper: #211c17; --paper-2: #2b241d; --ink: #e8dfd0; --muted: #9a8f7d;
+      --accent: #6fa38a; --accent-2: #c9a24b; --danger: #c65b4f; --line: #4a3f33;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0; color: var(--ink); font-family: Georgia, "Times New Roman", serif; line-height: 1.4;
+      background: var(--bg) radial-gradient(circle at top, #1f2a26 0%, var(--bg) 55%) fixed; min-height: 100vh;
+    }
+    .top {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-bottom: 2px solid var(--accent); background: rgba(20, 17, 15, .95);
+    }
+    .left { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .top h1 { margin: 0; font-size: 1.35rem; letter-spacing: .05em; color: var(--accent-2); }
+    .top h1 small { display: block; font-size: .68rem; color: var(--muted); letter-spacing: .15em; text-transform: uppercase; }
+    button, .btn {
+      font: inherit; font-size: .85rem; cursor: pointer; color: var(--ink); text-decoration: none;
+      background: var(--paper-2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px;
+      transition: background .15s, border-color .15s;
+    }
+    button:hover, .btn:hover { background: #3a3128; border-color: var(--accent); }
+    .status { display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; color: var(--muted); }
+    .status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; }
+    .status.ok { color: #9fe0b8; } .status.ok .dot { background: #6fe3a3; }
+    .status.warn { color: #ffcf8a; } .status.warn .dot { background: #ffcf8a; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 20px 14px 60px; }
+    .players { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+    .empty { margin: 0; color: var(--muted); font-style: italic; font-size: .9rem; }
+
+    .pcard {
+      background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .35); min-width: 0; display: grid; gap: 10px;
+    }
+    .ph { display: flex; gap: 12px; align-items: center; }
+    .avatar {
+      flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 1.2rem;
+      background: rgba(201, 162, 75, .16); border: 1px solid var(--accent-2); color: var(--accent-2);
+    }
+    .pt { flex: 1; min-width: 0; }
+    .pt b { display: block; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pt small { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gear { flex: none; font-size: .78rem; padding: 5px 9px; }
+    .gear.on { color: var(--accent-2); border-color: var(--accent-2); background: rgba(201, 162, 75, .16); }
+
+    .chooser { background: var(--paper-2); border: 1px dashed var(--accent-2); border-radius: 8px; padding: 10px; display: grid; gap: 6px; }
+    .chooser .hd { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .opt { display: flex; align-items: center; gap: 9px; font-size: .95rem; cursor: pointer; padding: 3px 0; }
+    .opt input { width: 20px; height: 20px; accent-color: var(--accent-2); flex: none; }
+    .quick { display: flex; gap: 6px; margin-top: 2px; }
+    .quick button { font-size: .75rem; padding: 3px 9px; }
+
+    .view { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+    .mk { background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; text-align: center; min-width: 0; }
+    .mk-name { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mk-val { font-size: 2rem; font-weight: bold; color: var(--accent-2); line-height: 1.2; }
+    .mk-val span { font-size: .95rem; font-weight: normal; color: var(--muted); }
+    .bar { height: 6px; background: #17130f; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+    .mk.low .mk-val { color: #ff9b8f; }
+    .mk.low .bar i { background: var(--danger); }
+    .view .empty { grid-column: 1 / -1; }
+    .foot { font-size: .72rem; color: var(--muted); text-align: right; }
+
+    dialog { color: var(--ink); background: var(--paper); border: 1px solid var(--accent-2); border-radius: 10px; padding: 16px; width: min(460px, 94vw); max-height: 90vh; overflow: auto; }
+    dialog::backdrop { background: rgba(0, 0, 0, .65); }
+    dialog h2 { margin: 0 0 10px; font-size: 1.1rem; color: var(--accent-2); }
+    dialog input[type=text], dialog input[type=password] {
+      width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: #17130f; border: 1px solid var(--line); border-radius: 6px; padding: 8px;
+    }
+    dialog input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .row .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row .who small { color: var(--muted); }
+    .row .acts { display: flex; gap: 6px; }
+    .row .pw { grid-column: 1 / -1; display: flex; gap: 6px; }
+    .row .pw input { flex: 1; }
+    .danger { color: #ffb3a8; border-color: var(--danger); }
+    .msg { min-height: 1.2em; margin: 8px 0 0; font-size: .85rem; color: var(--muted); }
+    .msg.err { color: #ffb3a8; } .msg.ok { color: #9fe0b8; }
+    .form { display: grid; gap: 8px; margin-top: 4px; }
+    .form label { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: grid; gap: 3px; }
+    .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    .note { font-size: .8rem; color: var(--muted); margin: 0 0 8px; }
+    .fab { display: none; }
+    .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    dialog input[type=file] { font-size: .85rem; color: var(--muted); }
+    button.primary { color: var(--accent-2); border-color: var(--accent-2); background: rgba(201, 162, 75, .14); padding: 10px 12px; font-size: .95rem; }
+    @media (max-width: 640px) {
+      body { padding-top: 62px; }
+      .fab {
+        display: flex; position: fixed; z-index: 30; top: 8px; left: 8px; width: 46px; height: 46px; padding: 0;
+        align-items: center; justify-content: center; font-size: 1.35rem; color: var(--accent-2);
+        background: var(--paper); border: 1px solid var(--accent-2); border-radius: 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, .55);
+      }
+      .top { display: block; padding: 0; border: 0; background: none; }
+      .top h1 { display: none; }
+      .top .left { display: contents; }
+      .actions {
+        display: none; position: fixed; top: 60px; left: 8px; z-index: 31; width: min(250px, 80vw);
+        flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 6px; padding: 8px;
+        background: #0f0c0a; border: 1px solid var(--accent); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+      }
+      body.pop-top .actions { display: flex; }
+      .actions button, .actions .btn { width: 100%; text-align: left; padding: 9px 12px; }
+      .status { position: fixed; top: 22px; left: 62px; z-index: 30; }
+      .status .txt { display: none; }
+      main { padding: 6px 8px 50px; }
+      .players { grid-template-columns: 1fr; gap: 10px; }
+      dialog { width: 94vw; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <button type="button" id="top-menu" class="fab" aria-expanded="false" aria-label="Menu do mestre" title="Menu">☰</button>
+    <h1>Mesa do Mestre <small>marcadores dos jogadores</small></h1>
+    <div class="left">
+      <div class="actions">
+        <a class="btn" href="../">← Início</a>
+        <button type="button" id="open-pw">🔑 Senhas</button>
+        <button type="button" id="open-players">👥 Jogadores</button>
+        <button type="button" id="logout" hidden>Sair</button>
+      </div>
+      <span id="status" class="status"><i class="dot"></i><span class="txt">conectando…</span></span>
+    </div>
+  </header>
+
+  <dialog id="dlg-pw">
+    <h2>🔑 Senhas</h2>
+    <p class="note">Defina a senha de cada ficha e da área do mestre. Deixe em branco e salve para remover. A senha fica criptografada em <code>senha.json</code> dentro da pasta; se esquecer, apague esse arquivo.</p>
+    <div id="pw-list"></div>
+    <p id="pw-msg" class="msg" role="status"></p>
+    <div class="dlg-actions"><button type="button" data-close>Fechar</button></div>
+  </dialog>
+
+  <dialog id="dlg-players">
+    <h2>👥 Jogadores</h2>
+    <form id="new-form" class="form">
+      <label id="np-modelo-wrap">Modelo de ficha<select id="np-modelo"></select></label>
+      <label>Nome do personagem<input type="text" id="np-nome" maxlength="60" autocomplete="off"></label>
+      <label>Nome do jogador<input type="text" id="np-jogador" maxlength="60" autocomplete="off"></label>
+      <label>Senha (opcional)<input type="password" id="np-senha" autocomplete="new-password"></label>
+      <label>Importar ficha (.json, opcional)<input type="file" id="np-file" accept=".json,application/json"></label>
+      <p id="np-file-msg" class="note">Se importar uma ficha, o nome do personagem e do jogador são preenchidos sozinhos (você pode mudar).</p>
+      <button type="button" id="np-create" class="primary">Criar ficha</button>
+    </form>
+    <p id="pl-msg" class="msg" role="status"></p>
+    <h2 style="margin-top:14px">Deletar jogador</h2>
+    <p class="note">Apaga a pasta inteira do jogador, inclusive a ficha. Não dá para desfazer.</p>
+    <div id="pl-list"></div>
+    <div class="dlg-actions"><button type="button" data-close>Fechar</button></div>
+  </dialog>
+
+  <dialog id="dlg-del">
+    <h2>Deletar jogador</h2>
+    <p class="note" id="del-text"></p>
+    <input type="text" id="del-input" autocomplete="off" placeholder="DELETAR">
+    <p id="del-msg" class="msg err" role="alert"></p>
+    <div class="dlg-actions"><button type="button" data-close>Cancelar</button><button type="button" id="del-go" class="danger" disabled>Deletar</button></div>
+  </dialog>
+
+  <main>
+    <div id="players" class="players"></div>
+    <p id="empty" class="empty" hidden>Nenhuma ficha de jogador encontrada. Cada jogador precisa de uma pasta dentro de <code>players/</code>, com o <code>player.html</code> da ficha.</p>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const h = (tag, cls, text) => {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+      };
+      const $ = s => document.querySelector(s);
+
+      // pasta onde este mestre.html mora (guarda aqui a configuração: <pasta>/<pasta>.json)
+      const DIR = (() => {
+        const seg = location.pathname.split('/').filter(Boolean).map(s => { try { return decodeURIComponent(s); } catch (_) { return s; } });
+        const last = seg[seg.length - 1] || '';
+        return (/\.[a-z0-9]+$/i.test(last) ? seg[seg.length - 2] : last) || 'mestre';
+      })();
+      const CFG_API = '/api/ficha/' + encodeURIComponent(DIR);
+      const CFG_LS = 'coc-mestre-' + DIR;
+      const POLL_MS = 2000;
+
+      const baseName = f => String(f).replace(/(\.index)?\.html?$/i, '').replace(/\.index$/i, '');
+      function fieldVal(j, id) {
+        if (!j) return '';
+        let v = '';
+        if (Array.isArray(j.campos)) { const c = j.campos.find(x => x && x.id === id); if (c && c.valor != null) v = String(c.valor); }
+        if (!v.trim() && j.info && j.info[id] != null) v = String(j.info[id]);
+        if (!v.trim() && j[id + '_inicial'] != null) v = String(j[id + '_inicial']);
+        return v.trim();
+      }
+
+      // config: { jogadores: { "<pasta>": ["pv", "san"] } }  (ausente = ainda não escolhido)
+      let cfg = { jogadores: {} };
+      const players = new Map();   // pasta → { pasta, arquivo, nome }
+      const cards = new Map();     // pasta → elementos da tela
+      const data = new Map();      // pasta → JSON da ficha (ou null)
+      const open = new Set();      // seletores abertos
+      const autoOpened = new Set();
+
+      const statusEl = $('#status');
+      function setStatus(text, cls) {
+        statusEl.className = 'status ' + (cls || '');
+        $('.txt', statusEl).textContent = text;
+      }
+
+      // ---------- configuração ----------
+      async function loadCfg() {
+        let got = null;
+        try {
+          const r = await fetch(CFG_API, { cache: 'no-store' });
+          if (r.ok) got = await r.json();
+        } catch (_) { /* sem servidor */ }
+        if (!got || typeof got.jogadores !== 'object') {
+          try { got = JSON.parse(localStorage.getItem(CFG_LS) || 'null'); } catch (_) { got = null; }
+        }
+        if (got && got.jogadores && typeof got.jogadores === 'object') cfg = { jogadores: got.jogadores };
+      }
+      let saveTimer;
+      function saveCfg() {
+        try { localStorage.setItem(CFG_LS, JSON.stringify(cfg)); } catch (_) { /* ignora */ }
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          fetch(CFG_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) }).catch(() => {});
+        }, 300);
+      }
+
+      // ---------- marcadores de uma ficha ----------
+      function markersOf(j) {
+        const arr = j && Array.isArray(j.marcadores) ? j.marcadores : [];
+        const used = new Set();
+        return arr.map((m, i) => {
+          let key = m.id || m.tipo || 'i' + i;
+          if (used.has(key)) key += '#' + i;
+          used.add(key);
+          return { key, nome: m.nome || m.tipo || 'Marcador', livre: m.tipo === 'livre', atual: m.atual, max: m.max_efetivo != null ? m.max_efetivo : m.max };
+        });
+      }
+
+      function markerCard(m) {
+        if (m.livre) { // espaço único: só um valor, sem limites
+          const c = h('div', 'mk');
+          c.append(h('div', 'mk-name', m.nome));
+          c.append(h('div', 'mk-val', m.atual == null || m.atual === '' ? '—' : String(m.atual)));
+          return c;
+        }
+        const cur = Number.isFinite(m.atual) ? m.atual : null;
+        const max = Number.isFinite(m.max) && m.max > 0 ? m.max : null;
+        const low = cur != null && max != null && cur / max <= 0.25;
+        const c = h('div', 'mk' + (low ? ' low' : ''));
+        c.append(h('div', 'mk-name', m.nome));
+        const v = h('div', 'mk-val', cur == null ? '—' : String(cur));
+        if (max != null) v.append(h('span', null, ' / ' + max));
+        c.append(v);
+        if (max != null && cur != null) {
+          const bar = h('div', 'bar');
+          const i = document.createElement('i');
+          i.style.width = Math.max(0, Math.min(100, cur / max * 100)) + '%';
+          bar.append(i);
+          c.append(bar);
+        }
+        return c;
+      }
+
+      // ---------- cartão de cada jogador ----------
+      function getCard(p) {
+        let c = cards.get(p.pasta);
+        if (c) return c;
+        const root = h('section', 'pcard');
+        const head = h('div', 'ph');
+        const av = h('span', 'avatar');
+        const tt = h('div', 'pt');
+        const name = h('b');
+        const sub = h('small');
+        tt.append(name, sub);
+        const gear = h('button', 'gear', '⚙ Marcadores');
+        gear.type = 'button';
+        gear.title = 'Escolher quais marcadores aparecem';
+        head.append(av, tt, gear);
+        const chooser = h('div', 'chooser');
+        chooser.hidden = true;
+        const view = h('div', 'view');
+        const foot = h('div', 'foot');
+        root.append(head, chooser, view, foot);
+        $('#players').appendChild(root);
+        gear.addEventListener('click', () => {
+          if (open.has(p.pasta)) open.delete(p.pasta); else open.add(p.pasta);
+          update(p.pasta);
+        });
+        c = { root, av, name, sub, gear, chooser, view, foot, sigC: '', sigV: '' };
+        cards.set(p.pasta, c);
+        return c;
+      }
+
+      function setSelected(pasta, keys) {
+        cfg.jogadores[pasta] = keys;
+        saveCfg();
+        update(pasta);
+      }
+
+      function buildChooser(c, p, markers) {
+        c.chooser.replaceChildren();
+        c.chooser.append(h('div', 'hd', 'Marcadores visíveis para o mestre'));
+        if (!markers.length) {
+          c.chooser.append(h('p', 'empty', 'Esta ficha ainda não tem marcadores.'));
+          return;
+        }
+        const sel = new Set(cfg.jogadores[p.pasta] || []);
+        markers.forEach(m => {
+          const lb = h('label', 'opt');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = sel.has(m.key);
+          cb.addEventListener('change', () => {
+            const cur = new Set(cfg.jogadores[p.pasta] || []);
+            if (cb.checked) cur.add(m.key); else cur.delete(m.key);
+            setSelected(p.pasta, [...cur]);
+          });
+          lb.append(cb, h('span', null, m.nome));
+          c.chooser.append(lb);
+        });
+        const q = h('div', 'quick');
+        const all = h('button', null, 'Todos');
+        const none = h('button', null, 'Nenhum');
+        all.type = none.type = 'button';
+        all.addEventListener('click', () => { c.sigC = ''; setSelected(p.pasta, markers.map(m => m.key)); });
+        none.addEventListener('click', () => { c.sigC = ''; setSelected(p.pasta, []); });
+        q.append(all, none);
+        c.chooser.append(q);
+      }
+
+      function update(pasta) {
+        const p = players.get(pasta);
+        if (!p) return;
+        const c = getCard(p);
+        const j = data.get(pasta) || null;
+
+        const nome = fieldVal(j, 'nome') || nomeDe(p);
+        c.name.textContent = nome;
+        c.sub.textContent = [fieldVal(j, 'jogador'), fieldVal(j, 'ocupacao')].filter(Boolean).join(' · ') || (p.pasta + '/' + p.arquivo);
+        c.av.textContent = (nome[0] || '?').toUpperCase();
+
+        const markers = markersOf(j);
+        const selected = cfg.jogadores[pasta];
+        // na primeira vez que o jogador tem marcadores e nada foi escolhido, já abre o seletor
+        if (selected === undefined && markers.length && !autoOpened.has(pasta)) { autoOpened.add(pasta); open.add(pasta); }
+
+        const isOpen = open.has(pasta);
+        c.gear.classList.toggle('on', isOpen);
+        c.chooser.hidden = !isOpen;
+        const sigC = JSON.stringify([markers.map(m => [m.key, m.nome]), isOpen]);
+        if (isOpen && sigC !== c.sigC) { c.sigC = sigC; buildChooser(c, p, markers); }
+
+        const sel = selected || [];
+        const chosen = markers.filter(m => sel.includes(m.key));
+        const sigV = JSON.stringify([!!j, markers.length, chosen]);
+        if (sigV !== c.sigV) {
+          c.sigV = sigV;
+          c.view.replaceChildren();
+          if (!j) c.view.append(h('p', 'empty', 'Este jogador ainda não abriu a ficha.'));
+          else if (!markers.length) c.view.append(h('p', 'empty', 'Esta ficha não tem marcadores.'));
+          else if (!chosen.length) c.view.append(h('p', 'empty', 'Nenhum marcador escolhido — use "⚙ Marcadores".'));
+          else chosen.forEach(m => c.view.append(markerCard(m)));
+        }
+
+        let when = '';
+        if (j && j.meta && j.meta.atualizado_em) {
+          const d = new Date(j.meta.atualizado_em);
+          if (!isNaN(d)) when = 'atualizado às ' + d.toLocaleTimeString('pt-BR');
+        }
+        c.foot.textContent = when;
+      }
+
+      // ---------- atualização ao vivo ----------
+      async function tick(force) {
+        if (document.hidden && force !== true) return;
+        let list;
+        try {
+          const r = await fetch('/api/mesa', { cache: 'no-store' });
+          if (r.status === 401) { location.reload(); return; }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          list = (await r.json()).jogadores;
+        } catch (_) {
+          setStatus(location.protocol === 'file:' ? 'Abra pelo servidor (node server.js)' : 'Servidor fora do ar', 'warn');
+          return;
+        }
+        setStatus('Ao vivo', 'ok');
+
+        list.forEach(p => data.set(p.pasta, p.ficha || null));
+
+        const names = new Set(list.map(p => p.pasta));
+        for (const [pasta, c] of cards) {
+          if (!names.has(pasta)) { c.root.remove(); cards.delete(pasta); players.delete(pasta); data.delete(pasta); }
+        }
+        list.forEach(p => { players.set(p.pasta, p); update(p.pasta); });
+
+        const want = list.map(p => cards.get(p.pasta).root);
+        const have = [...$('#players').children];
+        if (want.length !== have.length || want.some((n, i) => have[i] !== n)) want.forEach(n => $('#players').appendChild(n));
+        $('#empty').hidden = list.length > 0;
+      }
+
+      // menu ☰ no celular
+      $('#top-menu').addEventListener('click', () => {
+        const on = document.body.classList.toggle('pop-top');
+        $('#top-menu').setAttribute('aria-expanded', String(on));
+      });
+      document.addEventListener('click', e => {
+        if (document.body.classList.contains('pop-top') && !e.target.closest('#top-menu') && !e.target.closest('.actions')) {
+          document.body.classList.remove('pop-top');
+          $('#top-menu').setAttribute('aria-expanded', 'false');
+        }
+        if (e.target.closest('.actions button')) { document.body.classList.remove('pop-top'); }
+      });
+
+      // ---------- senhas e gerenciamento de jogadores ----------
+      let lastList = { jogadores: [], mestre: null };
+      const nomeDe = p => p.nome || (baseName(p.arquivo).toLowerCase() === 'player' ? p.pasta : baseName(p.arquivo));
+      const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(async r => ({ ok: r.ok, status: r.status, j: await r.json().catch(() => ({})) }));
+      const say = (el, text, cls) => { el.textContent = text; el.className = 'msg ' + (cls || ''); };
+      document.querySelectorAll('dialog [data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+
+      async function refreshList() {
+        try { lastList = await (await fetch('/api/fichas', { cache: 'no-store' })).json(); } catch (_) { /* mantém */ }
+      }
+
+      function renderPw() {
+        const box = $('#pw-list');
+        box.replaceChildren();
+        const items = [];
+        if (lastList.mestre) items.push({ pasta: lastList.mestre.pasta, titulo: '♛ Área do Mestre', prot: lastList.mestre.protegida });
+        lastList.jogadores.forEach(p => items.push({ pasta: p.pasta, titulo: nomeDe(p), prot: p.protegida, sub: p.pasta }));
+        items.forEach(it => {
+          const row = h('div', 'row');
+          const who = h('div', 'who', it.titulo);
+          who.append(h('small', null, (it.sub ? '  · ' + it.sub : '') + (it.prot ? '  · 🔒 com senha' : '  · sem senha')));
+          const pw = h('div', 'pw');
+          const inp = document.createElement('input');
+          inp.type = 'password'; inp.placeholder = it.prot ? 'Nova senha' : 'Definir senha'; inp.autocomplete = 'new-password';
+          const save = h('button', null, 'Salvar'); save.type = 'button';
+          const rem = h('button', 'danger', 'Remover'); rem.type = 'button'; rem.hidden = !it.prot;
+          const go = async senha => {
+            const r = await post('/api/senha/' + encodeURIComponent(it.pasta), { senha });
+            if (r.ok) { say($('#pw-msg'), senha ? 'Senha definida.' : 'Senha removida.', 'ok'); await refreshList(); renderPw(); }
+            else say($('#pw-msg'), r.j.erro || 'Erro ao salvar.', 'err');
+          };
+          save.addEventListener('click', () => { if (!inp.value) return say($('#pw-msg'), 'Digite uma senha (ou use Remover).', 'err'); go(inp.value); });
+          rem.addEventListener('click', () => go(''));
+          pw.append(inp, save, rem);
+          row.append(who, pw);
+          box.append(row);
+        });
+        if (!items.length) box.append(h('p', 'empty', 'Nada para proteger ainda.'));
+        $('#logout').hidden = !lastList.mestre || !lastList.mestre.protegida;
+      }
+      $('#open-pw').addEventListener('click', async () => { say($('#pw-msg'), ''); await refreshList(); renderPw(); $('#dlg-pw').showModal(); });
+
+      function renderPlayers() {
+        const box = $('#pl-list');
+        box.replaceChildren();
+        lastList.jogadores.forEach(p => {
+          const row = h('div', 'row');
+          const who = h('div', 'who', nomeDe(p));
+          who.append(h('small', null, '  · ' + p.pasta));
+          const del = h('button', 'danger', 'Deletar'); del.type = 'button';
+          del.addEventListener('click', () => openDelete(p));
+          row.append(who, del);
+          box.append(row);
+        });
+        if (!lastList.jogadores.length) box.append(h('p', 'empty', 'Nenhum jogador.'));
+      }
+      async function loadModels() {
+        try {
+          const r = await fetch('/api/modelos', { cache: 'no-store' });
+          const { modelos } = await r.json();
+          const sel = $('#np-modelo');
+          const prev = sel.value;
+          sel.replaceChildren();
+          modelos.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.id; sel.append(o); });
+          if (modelos.some(m => m.id === prev)) sel.value = prev;
+          $('#np-modelo-wrap').hidden = false;
+          if (!modelos.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '(nenhuma pasta em _modelo)'; sel.append(o); }
+        } catch (_) { /* mantém */ }
+      }
+      $('#open-players').addEventListener('click', async () => { say($('#pl-msg'), ''); await Promise.all([refreshList(), loadModels()]); renderPlayers(); $('#dlg-players').showModal(); });
+
+      // importar uma ficha .json: já preenche o nome do personagem e do jogador
+      let imported = null;
+      $('#np-file').addEventListener('change', async () => {
+        const f = $('#np-file').files[0];
+        imported = null;
+        if (!f) { $('#np-file-msg').textContent = ''; return; }
+        try {
+          const j = JSON.parse(await f.text());
+          if (!j || typeof j !== 'object' || Array.isArray(j)) throw new Error('formato');
+          imported = j;
+          const nome = fieldVal(j, 'nome'), jog = fieldVal(j, 'jogador');
+          if (nome) $('#np-nome').value = nome;
+          if (jog) $('#np-jogador').value = jog;
+          $('#np-file-msg').textContent = `Ficha carregada${nome ? ': ' + nome : ''}${jog ? ' (' + jog + ')' : ''}.`;
+        } catch (_) {
+          $('#np-file').value = '';
+          $('#np-file-msg').textContent = 'Esse arquivo não é um JSON de ficha válido.';
+        }
+      });
+      $('#new-form').addEventListener('submit', ev => ev.preventDefault()); // só o botão "Criar ficha" cria
+      $('#np-create').addEventListener('click', async () => {
+        const nome = $('#np-nome').value.trim(), jogador = $('#np-jogador').value.trim();
+        if (!nome && !jogador) { say($('#pl-msg'), 'Informe o nome do personagem (ou do jogador).', 'err'); $('#np-nome').focus(); return; }
+        const body = { nome, jogador, senha: $('#np-senha').value, modelo: $('#np-modelo').value };
+        if (imported) body.ficha = imported;
+        const r = await post('/api/jogadores', body);
+        if (r.ok) {
+          say($('#pl-msg'), `Ficha criada: pasta "${r.j.pasta}".`, 'ok');
+          $('#new-form').reset(); imported = null; $('#np-file-msg').textContent = '';
+          await refreshList(); renderPlayers(); tick(true);
+        } else say($('#pl-msg'), r.j.erro || 'Erro ao criar.', 'err');
+      });
+
+      let delTarget = null;
+      function openDelete(p) {
+        delTarget = p;
+        $('#del-text').textContent = `Para deletar "${nomeDe(p)}" (pasta ${p.pasta}) e toda a ficha, escreva DELETAR.`;
+        $('#del-input').value = ''; $('#del-go').disabled = true; say($('#del-msg'), '', 'err');
+        $('#dlg-del').showModal();
+        $('#del-input').focus();
+      }
+      $('#del-input').addEventListener('input', () => { $('#del-go').disabled = $('#del-input').value.trim() !== 'DELETAR'; });
+      $('#del-go').addEventListener('click', async () => {
+        if (!delTarget) return;
+        const r = await post('/api/jogadores/' + encodeURIComponent(delTarget.pasta) + '/deletar', { confirmar: $('#del-input').value.trim() });
+        if (r.ok) {
+          $('#dlg-del').close();
+          open.delete(delTarget.pasta); delete cfg.jogadores[delTarget.pasta]; saveCfg();
+          await refreshList(); renderPlayers(); tick(true);
+          say($('#pl-msg'), 'Jogador deletado.', 'ok');
+        } else say($('#del-msg'), r.j.erro || 'Erro ao deletar.', 'err');
+      });
+
+      $('#logout').addEventListener('click', async () => { await post('/api/logout', {}); location.href = '../'; });
+
+      (async () => {
+        await loadCfg();
+        refreshList().then(() => { $('#logout').hidden = !lastList.mestre || !lastList.mestre.protegida; });
+        await tick();
+        setInterval(tick, POLL_MS);
+        document.addEventListener('visibilitychange', tick);
+      })();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha de Investigador – Call of Cthulhu</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <button type="button" id="top-menu" class="fab fab-tl" aria-expanded="false" aria-label="Menu da ficha" title="Menu">☰</button>
+    <h1>Call of Cthulhu <small>Ficha de Investigador · 7ª Edição</small></h1>
+    <div class="actions">
+      <a class="btn" href="/" title="Voltar à página inicial">← Início</a>
+      <button type="button" id="btn-export">Exportar JSON</button>
+      <label class="btn">Importar JSON<input type="file" id="file-import" accept=".json,application/json" hidden></label>
+      <button type="button" id="edit-toggle" aria-pressed="false" title="Editar a estrutura da ficha">✏️ Editar</button>
+      <button type="button" id="reset-open" class="danger">Resetar ficha</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" id="nav-fab" class="fab fab-br" aria-expanded="false" aria-label="Seções da ficha" title="Seções">▦</button>
+    <div class="tab-btns">
+      <button type="button" role="tab" class="tabbtn" data-tabbtn="personagem">Personagem</button>
+      <button type="button" role="tab" class="tabbtn" data-tabbtn="pericias">Perícias</button>
+      <button type="button" role="tab" class="tabbtn" data-tabbtn="combate">Combate<span class="opt"> e Inventário</span></button>
+      <button type="button" role="tab" class="tabbtn" data-tabbtn="historico">Histórico</button>
+    </div>
+    <span id="status" class="status"><i class="dot"></i><span class="txt">carregando…</span></span>
+    <button type="button" id="roll-toggle" class="rollbtn" aria-expanded="false" aria-controls="roll-panel" title="Histórico de rolagens">🎲<span class="lbl"> Histórico</span></button>
+  </nav>
+
+  <main>
+    <div id="edit-banner" class="edit-banner" hidden>Modo edição: renomeie, adicione e remova campos, características, marcadores, perícias e containers. Os valores podem ser alterados a qualquer momento. Toque em "Concluir edição" quando terminar.</div>
+    <!-- ================= PERSONAGEM ================= -->
+    <div class="tab" data-tab="personagem">
+      <section class="card">
+        <h2>Investigador</h2>
+        <div id="fields" class="grid info"></div>
+        <button type="button" id="add-field" class="add edit-only">+ Adicionar campo</button>
+      </section>
+
+      <section class="card">
+        <h2>Características <small>(valor · ½ · ⅕) — toque no nome para testar</small></h2>
+        <div id="chars" class="blocks"></div>
+        <div class="menu-wrap edit-only">
+          <button type="button" class="add" data-menu="menu-char">+ Adicionar característica ▾</button>
+          <div class="menu" id="menu-char" hidden><div class="items"></div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Marcadores</h2>
+        <div id="markers" class="blocks"></div>
+        <div class="menu-wrap edit-only">
+          <button type="button" class="add" data-menu="menu-marker">+ Adicionar marcador ▾</button>
+          <div class="menu" id="menu-marker" hidden><div class="items"></div></div>
+        </div>
+
+        <h3 class="sub-title">Condições</h3>
+        <div id="cond-list" class="chips"></div>
+        <p id="cond-empty" class="empty">Nenhuma condição ativa.</p>
+        <div class="menu-wrap">
+          <button type="button" class="add" data-menu="menu-cond">+ Adicionar condição ▾</button>
+          <div class="menu" id="menu-cond" hidden>
+            <div class="items"></div>
+            <div class="custom">
+              <input type="text" id="cond-custom" data-nosave placeholder="Outra condição…">
+              <button type="button" id="add-cond-custom">Adicionar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= PERÍCIAS ================= -->
+    <div class="tab" data-tab="pericias">
+      <section class="card" id="skills-wrap">
+        <h2>Perícias <small>toque no nome para testar</small></h2>
+        <div class="skill-tools">
+          <input type="search" id="skill-search" data-nosave placeholder="Buscar perícia…">
+        </div>
+        <div class="skill-add edit-only">
+          <input type="text" id="new-skill-name" data-nosave placeholder="Nova perícia (ex.: Ciência (Química))">
+          <button type="button" id="add-skill">+ Adicionar</button>
+        </div>
+        <div class="points det-only">
+          <div class="occ-calc">
+            <span>Pontos de ocupação =</span>
+            <select id="occ-a" aria-label="Primeira característica (×2)"></select><span>×2 +</span>
+            <select id="occ-b" aria-label="Segunda característica (×2)"></select><span>×2</span>
+            <span class="occ-res">= <b id="occ-auto">0</b></span>
+          </div>
+          <label>Pontos de ocupação: valor ou =fórmula<input type="text" class="fx" id="orc-ocup" placeholder="automático" autocomplete="off" spellcheck="false"></label>
+          <span>Gastos: <b id="gasto-ocup">0</b> / <b id="tot-ocup">0</b></span>
+          <label>Pontos pessoais: valor ou =fórmula<input type="text" class="fx" id="orc-pess" placeholder="INT×2" autocomplete="off" spellcheck="false"></label>
+          <span>Gastos: <b id="gasto-pess">0</b> / <b id="tot-pess">0</b></span>
+        </div>
+
+        <div id="skills-pinned-wrap" hidden>
+          <h3 class="sub-title">📌 Fixadas</h3>
+          <div id="skills-pinned" class="skills"></div>
+          <h3 class="sub-title">Demais perícias</h3>
+        </div>
+        <div id="skills-list" class="skills"></div>
+
+        <div class="improve-box">
+          <button type="button" id="improve-skills" class="add improve" disabled>🎲 Melhoria de perícia automática <span id="improve-count"></span></button>
+          <p class="hint">Marque ✓ as perícias usadas com sucesso. O botão rola 1d100 para cada uma: se o resultado for maior que o valor da perícia (ou acima de 95), soma 1d10 em "Melh." e a marca é removida. O resultado aparece no histórico de rolagens.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= COMBATE E INVENTÁRIO ================= -->
+    <div class="tab" data-tab="combate">
+      <section class="card">
+        <h2>Combate</h2>
+        <div class="derived">
+          <div><span>Bônus de Dano</span><b id="db">0</b></div>
+          <div><span>Corpo</span><b id="build">0</b></div>
+          <div><span>Movimento</span><b id="move">0</b></div>
+          <div><span>Esquiva</span><b id="dodge">0</b></div>
+        </div>
+        <div id="weapons-list" class="weapons"></div>
+        <button type="button" id="add-weapon" class="add">+ Adicionar arma</button>
+      </section>
+
+      <section class="card">
+        <h2>Inventário</h2>
+        <div id="items-list" class="items-grid"></div>
+        <p id="items-empty" class="empty">Nenhum item no inventário.</p>
+        <button type="button" id="add-item" class="add">+ Adicionar item</button>
+      </section>
+    </div>
+
+    <!-- ================= HISTÓRICO ================= -->
+    <div class="tab" data-tab="historico">
+      <section class="card">
+        <h2>História do Investigador</h2>
+        <div id="hist-list" class="boxes"></div>
+        <button type="button" class="add edit-only" data-add-box="#hist-list">+ Adicionar container</button>
+      </section>
+
+      <section class="card">
+        <h2>Posses e Finanças</h2>
+        <div id="posses-list" class="boxes"></div>
+        <button type="button" class="add edit-only" data-add-box="#posses-list">+ Adicionar container</button>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <aside id="roll-panel" class="roll-panel" aria-hidden="true" aria-label="Histórico de rolagens">
+    <div class="rp-head">
+      <h3>Histórico de rolagens</h3>
+      <div class="rp-actions">
+        <button type="button" id="roll-clear" class="danger">Limpar</button>
+        <button type="button" id="roll-close" aria-label="Fechar histórico">✕</button>
+      </div>
+    </div>
+    <form id="dice-form" class="dice-form" autocomplete="off">
+      <input type="text" id="dice-input" data-nosave value="1d20" placeholder="1d20+3 · (1d8+2d6)kh1 · 1d6+BD" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Expressão de dados">
+      <button type="submit" id="dice-roll">Rolar</button>
+    </form>
+    <div class="quick">
+      <button type="button" data-quick="1d4">d4</button>
+      <button type="button" data-quick="1d6">d6</button>
+      <button type="button" data-quick="1d8">d8</button>
+      <button type="button" data-quick="1d10">d10</button>
+      <button type="button" data-quick="1d12">d12</button>
+      <button type="button" data-quick="1d20">d20</button>
+      <button type="button" data-quick="1d100">d100</button>
+    </div>
+    <p class="dice-help">Some termos com + e −: <code>2d6+1d4+3</code>. <code>kh</code>/<code>kl</code> mantêm os maiores/menores (<code>4d6kh3</code>, <code>2d20kl1</code>); <code>dh</code>/<code>dl</code> descartam. Parênteses sorteiam todos os dados de dentro e aplicam o filtro no conjunto: <code>(1d8+2d6)kh1</code> fica com o maior dos 3 dados. <code>BD</code> vira o bônus de dano atual (<b id="bd-now">0</b>): <code>1d6+BD</code>.</p>
+    <p id="dice-error" class="dice-error" role="alert"></p>
+    <p id="roll-empty" class="empty roll-empty">Nenhuma rolagem ainda.</p>
+    <ol id="roll-list" class="roll-list"></ol>
+  </aside>
+
+  <dialog id="reset-dialog">
+    <h3>Resetar ficha</h3>
+    <p>Isto apaga <b>todos</b> os dados da ficha e também limpa o <code>player1.json</code>. Não dá para desfazer — considere usar "Exportar JSON" antes.</p>
+    <label>Digite <b>DELETAR</b> para confirmar
+      <input type="text" id="reset-input" data-nosave autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </label>
+    <div class="dialog-actions">
+      <button type="button" id="reset-cancel">Cancelar</button>
+      <button type="button" id="reset-confirm" class="danger" disabled>Resetar ficha</button>
+    </div>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
